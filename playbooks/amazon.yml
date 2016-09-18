@@ -1,0 +1,46 @@
+---
+- name: Provision the EC2 Server
+# ==============================
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+
+  vars:
+    regions:
+      "1": "ap-south-1"
+      "2": "ap-northeast-2"
+      "3": "ap-southeast-1"
+      "4": "ap-southeast-2"
+      "5": "ap-northeast-1"
+      "6": "eu-central-1"
+      "7": "eu-west-1"
+      "8": "sa-east-1"
+      "9": "us-east-1"
+      "10": "us-west-1"
+      "11": "us-west-2"
+
+  # These variable files are included so the ec2-security-group role
+  # knows which ports to open
+  vars_files:
+    - roles/ssh/defaults/main.yml
+
+  vars_prompt:
+    - name: "aws_region_var"
+      prompt: |
+        In what region should the server be located?
+          1. Asia Pacific   (Mumbai)
+          2. Asia Pacific   (Seoul)
+          3. Asia Pacific   (Singapore)
+          4. Asia Pacific   (Sydney)
+          5. Asia Pacific   (Tokyo)
+          6. EU             (Frankfurt)
+          7. EU             (Ireland)
+          8. South America  (Sao Paulo)
+          9. US East        (Northern Virginia)
+          10. US West       (Northern California)
+          11. US West       (Oregon)
+        Please select your region by typing the number and pressing enter. Press enter for the default region (#11).
+      default: "11"
+      private: no
+
+- include: setup.yml
