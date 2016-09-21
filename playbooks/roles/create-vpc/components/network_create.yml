@@ -52,10 +52,10 @@
       vpc_id: "{{vpc.vpc_id}}"
       region: "{{ aws_region }}"
       rules: "{{item.rules}}"
-    with_items:   vpc_security_groups
+    with_items: "{{vpc_security_groups}}"
     when: aws_vpc_id is not defined
 
-  - set_fact: aws_vpc_id_runtime={{ lookup('aws_vpc_id_from_name', aws_region, env + '-vpc') }}
+  - set_fact: aws_vpc_id_runtime={ lookup('aws_vpc_id_from_name', aws_region, env + '-vpc') }}
 
   - set_fact: aws_vpc_privsubnet1_runtime={{ lookup('aws_subnet_ids_from_names', aws_region, [readable_env_name + '-sb-priv-' + aws_region + '-' + vpc_availability_zone_t1]) }}
     when: aws_vpc_privsubnet1 is not defined
@@ -71,12 +71,18 @@
 
 
   - name: NETWORK | allocate a new elastic IP without associating it to anything - 1
-    ec2_eip: in_vpc=yes reuse_existing_ip_allowed=yes state=present region="{{aws_region}}"
+    ec2_eip:
+      in_vpc: yes
+      reuse_existing_ip_allowed: yes
+      region: "{{aws_region}}"
     when: aws_vpc_privsubnet1 is not defined
     register: eip_1
 
   - name: NETWORK | allocate a new elastic IP without associating it to anything - 2
-    ec2_eip: in_vpc=yes reuse_existing_ip_allowed=yes state=present region="{{aws_region}}"
+    ec2_eip:
+      in_vpc: yes
+      # reuse_existing_ip_allowed: yes
+      region: "{{aws_region}}"
     when: aws_vpc_privsubnet2 is not defined
     register: eip_2
 
@@ -96,7 +102,6 @@
       nat_instance1: "{{ nat_instance1_json.NatGateway.NatGatewayId }}"
     when: aws_vpc_privsubnet1 is not defined
 
-
   - set_fact: aws_vpc_privsubnet2_allocation={{ lookup('aws_ec2_allocation_id_from_eip', aws_region, eip_2.public_ip) }}
     when: aws_vpc_privsubnet2 is not defined
 
@@ -113,7 +118,7 @@
       nat_instance2: "{{ nat_instance2_json.NatGateway.NatGatewayId }}"
     when: aws_vpc_privsubnet2 is not defined
 
-  - debug: msg="Give a chance to NAT gatewates to initialize before we create routing records. In other case we fail."
+  - debug: msg="Give NAT Gateways a chance to proplery initialize themselves before we create routing records."
 
   - pause: seconds=45
 
