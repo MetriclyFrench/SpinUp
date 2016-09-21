@@ -1,0 +1,29 @@
+---
+- name: Install UFW
+  apt:
+    name: ufw
+
+- name: Disable UFW logging
+  lineinfile:
+    dest: /etc/ufw/ufw.conf
+    regexp: "^LOGLEVEL"
+    line: "LOGLEVEL=off"
+
+- name: Ensure UFW allows SSH
+  ufw:
+    to_port: "{{ ssh_port }}"
+    proto: "tcp"
+    rule: "allow"
+
+# - name: Ensure UFW is enabled and denies by default
+#   ufw:
+#     state: "enabled"
+#     policy: "deny"
+#     direction: "incoming"
+
+# - name: Ensure UFW allows nginx
+#   ufw:
+#     to_port: "{{ nginx_port }}"
+#     proto: "tcp"
+#     rule: "allow"
+#

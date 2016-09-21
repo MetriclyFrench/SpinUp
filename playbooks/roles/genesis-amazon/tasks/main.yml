@@ -1,0 +1,85 @@
+---
+- name: Remove the 'spinup' SSH key from Amazon if it already exists. This prevents conflicts that may occur when two people with different keys are sharing the AWS account.
+  ec2_key:
+    name: spinup-ssh
+    state: absent
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    region: "{{ aws_region }}"
+    wait: yes
+
+- name: Get the default SSH key
+  command: cat ~/.ssh/id_rsa.pub
+  register: ssh_key
+
+- name: Add the SSH key to Amazon under the name of 'spinup-ssh'
+  ec2_key:
+    name: spinup-ssh
+    key_material: "{{ ssh_key.stdout }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    region: "{{ aws_region }}"
+    wait: yes
+
+- name: Determine which AMI to use
+  ec2_ami_find:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    owner: "{{ aws_ami_owner }}"
+    region: "{{ aws_region }}"
+    name: "{{ aws_ami_name }}"
+    sort: name
+    sort_order: descending
+    sort_end: 1
+  register: ami
+
+- name: Provision the EC2 Instance
+  ec2:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    instance_type: "{{ aws_instance_type }}"
+    image: "{{ ami.results[0].ami_id }}"
+    region: "{{ aws_region }}"
+    vpc_subnet_id: "{{ aws_vpc_subnet_id | default(omit) }}"
+    assign_public_ip: "{{ aws_vpc_subnet_id is defined and aws_vpc_subnet_id != '' }}"
+    key_name: spinup-ssh
+    group: "{{ aws_security_group }}"
+    instance_tags:
+      Name: "{{ aws_instance_name }}"
+    wait: yes
+  register: spinup_server
+
+- name: Wait until the server has finished booting and OpenSSH is accepting connections
+  wait_for:
+    host: "{{ spinup_server.instances[0].public_ip }}"
+    port: 22
+    search_regex: OpenSSH
+    timeout: 600
+
+- name: Allocate and associate Elastic IP
+  ec2_eip:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    region: "{{ aws_region }}"
+    device_id: "{{ spinup_server.instances[0].id }}"
+    in_vpc: "{{ aws_vpc_id is defined and aws_vpc_id != '' }}"
+  register: instance_eip
+
+- name: Create the in-memory inventory group
+  add_host:
+    name: "{{ instance_eip.public_ip }}"
+    groups: spinup-host
+    ansible_user: ubuntu
+    ansible_become: yes
+
+- name: Set the spinup_ipv4_address variable
+  set_fact:
+    spinup_ipv4_address: "{{ instance_eip.public_ip }}"
+
+- name: Set the spinup_server_name variable
+  set_fact:
+    spinup_server_name: "{{ aws_instance_name }}"
+
+- name: New EC2 servers are occasionally slow to process incoming SSH connections even after the OpenSSH daemon has started up. Pause for 90 seconds.
+  pause:
+    seconds: 90

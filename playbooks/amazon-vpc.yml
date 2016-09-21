@@ -1,0 +1,7 @@
+---
+- name: Create a VPC
+# ==================
+
+
+  roles:
+    - create-vpc

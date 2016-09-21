@@ -1,0 +1,29 @@
+---
+- name: Create the EC2 security group
+  ec2_group:
+    name: "{{ aws_security_group }}"
+    description: Security group for SpinUp
+    region: "{{ aws_region }}"
+    vpc_id: "{{ aws_vpc_id | default(omit) }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+
+- name: Pause for fifteen seconds to ensure the EC2 security group has been created
+  pause:
+    seconds: 15
+
+- name: Open all of the necessary ports across every service in the EC2 security group
+  ec2_group:
+    name: "{{ aws_security_group }}"
+    description: Security group for SpinUp
+    region: "{{ aws_region }}"
+    vpc_id: "{{ aws_vpc_id | default(omit) }}"
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    rules:
+      # SSH
+      # ---
+      - proto: tcp
+        from_port: "{{ ssh_port }}"
+        to_port: "{{ ssh_port }}"
+        cidr_ip: 0.0.0.0/0

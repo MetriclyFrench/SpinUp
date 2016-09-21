@@ -1,0 +1,14 @@
+---
+spinup_common_packages:
+  # Used to configure firewall rules
+  - iptables
+  # Used for documentation generation
+  - markdown
+  # Ensures the server's clock is set properly
+  - ntp
+  # Required to use the Ansible `expect` module
+  - python-pexpect
+  # Required for the apt_repository module
+  - python-software-properties
+  # Used for automatically installing security updates
+  - unattended-upgrades
