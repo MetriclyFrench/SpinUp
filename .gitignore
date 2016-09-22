@@ -1,1 +1,4 @@
 .DS_Store
+playbooks/roles/create-vpc/bin/aws-us-east-1-demo.yml
+playbooks/roles/create-vpc/bin/aws-us-east-1-vars.yml
+playbooks/roles/create-vpc/bin/network_create.retry
